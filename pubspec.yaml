@@ -35,6 +35,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   vdocipher_flutter: ^2.7.8
+  http: ^0.13.6
+  webview_flutter: ^4.2.2
+  flutter_inappwebview: ^6.1.5
 
 dev_dependencies:
   flutter_test:

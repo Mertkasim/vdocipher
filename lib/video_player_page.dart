@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:vdocipher_flutter/vdocipher_flutter.dart';
 
 class VideoPlayerPage extends StatefulWidget {
@@ -10,25 +14,44 @@ class VideoPlayerPage extends StatefulWidget {
 
 class _VideoPlayerPageState extends State<VideoPlayerPage> {
   VdoPlayerController? _controller;
-  final double aspectRatio = 16/9;
+  final double aspectRatio = 16 / 9;
   String? _errorMessage;
   bool _isLoading = true;
+  String otp = "";
+  String playbackInfo = "";
 
   @override
   void initState() {
+    log("LODVİDEOOTP");
+    fetchOtp().then((res) {
+      if (res != null) {
+        setState(() {
+          otp = res["otp"];
+          playbackInfo = res["playbackInfo"];
+          _isLoading = false;
+        });
+        _controller = VdoPlayerController();
+      } else {
+        setState(() {
+          log("OTP veya playbackInfo alınamadı !!!!!!!!!!!!!");
+          _errorMessage = "OTP veya playbackInfo alınamadı";
+          _isLoading = false;
+        });
+      }
+    });
     super.initState();
-    _initializePlayer();
   }
 
   Future<void> _initializePlayer() async {
     try {
+      log("OTPİTİLİA -> $otp // $playbackInfo");
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
-      
+
       _controller = VdoPlayerController();
-      
+
       setState(() {
         _isLoading = false;
       });
@@ -37,14 +60,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         _errorMessage = e.toString();
         _isLoading = false;
       });
-      print('VdoPlayer initialization error: $e');
+      log('VdoPlayer initialization error: $e');
     }
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
   }
 
   @override
@@ -59,46 +76,57 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       );
     }
 
-    if (_errorMessage != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('VdoCipher Video')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Hata: $_errorMessage'),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _initializePlayer,
-                child: const Text('Tekrar Dene'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    // if (_errorMessage != null) {
+    //   return Scaffold(
+    //     appBar: AppBar(title: const Text('VdoCipher Video')),
+    //     body: Center(
+    //       child: Column(
+    //         mainAxisAlignment: MainAxisAlignment.center,
+    //         children: [
+    //           Text('Hata: $_errorMessage'),
+    //           const SizedBox(height: 20),
+    //           ElevatedButton(
+    //             onPressed: _initializePlayer,
+    //             child: const Text('Tekrar Dene'),
+    //           ),
+    //         ],
+    //       ),
+    //     ),
+    //   );
+    // }
 
+    log("AÇILACAKOTP -> ${otp} / $playbackInfo");
     return Scaffold(
       appBar: AppBar(title: const Text('VdoCipher Video')),
-      body: SafeArea(
-        child: VdoPlayer(
-          embedInfo: EmbedInfo.streaming(
-            otp: '20160313versASE323OLbh11WtsHB1NpeileVyP0jNCpgNk5Hi6RQIpjsw8gvd8Q',
-            playbackInfo: 'eyJ2aWRlb0lkIjoiNDk5ZTQyYWZhMzAzNDdkZjkyOTM5OTJkY2ZlNTE3ZGYifQ==',
-            embedInfoOptions: EmbedInfoOptions(
-              autoplay: false,
-              customPlayerId: "default",
-            )
-          ),
-          onPlayerCreated: (controller) => _onPlayerCreated(controller),
-          onError: (vdoError) {
-            print('VdoPlayer error: ${vdoError.message}');
-            setState(() {
-              _errorMessage = vdoError.message;
-            });
-          },
+      body: VdoPlayer(
+        embedInfo: EmbedInfo.streaming(
+          otp: otp,
+          playbackInfo: playbackInfo,
+          embedInfoOptions: EmbedInfoOptions(autoplay: true),
         ),
+        onPlayerCreated: (controller) => _onPlayerCreated(controller),
+        onError: _onVdoError,
+        controls: true,
       ),
+      // otp.isNotEmpty && playbackInfo.isNotEmpty
+      //     ? VdoPlayer(
+      //       embedInfo: EmbedInfo.streaming(
+      //         otp: otp,
+      //         playbackInfo: playbackInfo,
+      //         embedInfoOptions: EmbedInfoOptions(
+      //           autoplay: false,
+      //           customPlayerId: "default",
+      //         ),
+      //       ),
+      //       onPlayerCreated: _onPlayerCreated,
+      //       onError: (vdoError) {
+      //         print('VdoPlayer error: ${vdoError.message}');
+      //         setState(() {
+      //           _errorMessage = vdoError.message;
+      //         });
+      //       },
+      //     )
+      //     : const Center(child: Text("Video yüklenemedi.")),
     );
   }
 
@@ -115,12 +143,44 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     controller.addListener(() {
       if (!mounted) return;
       VdoPlayerValue value = controller.value;
-      debugPrint("Player State: "
+      debugPrint(
+        "Player State: "
         "\nloading: ${value.isLoading} "
         "\nplaying: ${value.isPlaying} "
         "\nbuffering: ${value.isBuffering} "
-        "\nended: ${value.isEnded}"
+        "\nended: ${value.isEnded}",
       );
     });
   }
+
+  Future<Map<String, dynamic>?> fetchOtp() async {
+    const String token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZXN1bHQiOjY4NywiaWF0IjoxNzUwMjI5MDcwLCJleHAiOjE3NTAyMzYyNzB9.ko6I3-O62UhqHN0clWDBdapC6T5W8Y9HzZo8ib0XQ3Q";
+    const String baseUrl = 'https://patiumut.com/api';
+    const String endpoint = '/user/get-otp/10766';
+
+    final Uri url = Uri.parse('$baseUrl$endpoint');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final res = jsonDecode(response.body);
+      log('OTP: ${res["otp"]}');
+      log('Playback Info: ${res["playbackInfo"]}');
+      return {"otp": res["otp"], "playbackInfo": res["playbackInfo"]};
+    } else {
+      log('Hata: ${response.statusCode} - ${response.body}');
+      return null;
+    }
+  }
+}
+
+_onVdoError(VdoError vdoError) {
+  print("Oops, the system encountered a problem: " + vdoError.message);
 }
