@@ -155,7 +155,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   Future<Map<String, dynamic>?> fetchOtp() async {
     const String token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZXN1bHQiOjY4NywiaWF0IjoxNzUwMjI5MDcwLCJleHAiOjE3NTAyMzYyNzB9.ko6I3-O62UhqHN0clWDBdapC6T5W8Y9HzZo8ib0XQ3Q";
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZXN1bHQiOjY4NywiaWF0IjoxNzUwMjQ3Mjg2LCJleHAiOjE3NTAyNTQ0ODZ9.yaF14MTg-S-A8h6TYqzJfK8qNnZbZ1ieSSQgYIO5nVg";
     const String baseUrl = 'https://patiumut.com/api';
     const String endpoint = '/user/get-otp/10766';
 
